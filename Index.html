@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trieur Photo V2 - Renommage</title>
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        :root { --primary: #2563eb; --bg: #f1f5f9; --card: #ffffff; --border: #e2e8f0; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        /* Contrôles */
+        .controls { background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; margin-bottom: 30px; }
+        .btn { background: var(--primary); color: white; padding: 12px 24px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: #1d4ed8; }
+        .btn-outline { background: white; border: 2px solid #cbd5e1; color: #475569; }
+        input[type="file"] { display: none; }
+        
+        /* Style des Dossiers (Cartes) */
+        .folder-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .folder-card:hover { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        
+        /* En-tête du dossier (Nom + Dates) */
+        .folder-header {
+            padding: 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .folder-name-input {
+            font-size: 1.1rem;
+            font-weight: bold;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            width: 300px;
+            color: #1e293b;
+        }
+        .folder-info { color: #64748b; font-size: 0.9rem; }
+        
+        /* Zone Aperçu Début / Fin */
+        .preview-strip {
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .key-photo {
+            flex: 0 0 120px;
+            text-align: center;
+        }
+        .key-photo img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            margin-bottom: 5px;
+        }
+        .key-label { font-size: 0.8rem; font-weight: bold; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Contenu déroulant (Accordion) */
+        .folder-content {
+            display: none; /* Caché par défaut */
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: #fff;
+        }
+        .grid-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+        }
+        .grid-gallery img { width: 100%; height: 80px; object-fit: cover; border-radius: 4px; opacity: 0.8; }
+        
+        /* Bouton toggle */
+        .toggle-btn {
+            background: none; border: none; color: var(--primary); 
+            cursor: pointer; text-decoration: underline; font-size: 0.9rem;
+            margin-left: auto; display: block;
+        }
+
+        #download-section { position: sticky; bottom: 20px; text-align: center; display: none; margin-top: 30px;}
+        .shadow-btn { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="text-align:center; margin-bottom:30px;">
+        <h1>🗂️ Trieur & Renommeur</h1>
+        <p style="color:#666">1. Sélectionnez vos photos &nbsp;→&nbsp; 2. Vérifiez et Renommez les dossiers &nbsp;→&nbsp; 3. Téléchargez</p>
+    </div>
+
+    <div class="controls">
+        <label for="fileInput" class="btn btn-outline" style="margin-right:10px;">📂 Choisir les photos</label>
+        <input type="file" id="fileInput" multiple accept="image/*">
+        
+        <span style="margin: 0 15px; color:#ccc">|</span>
+        
+        <label for="timeGap">Séparer si pause > <span id="gapValue" style="font-weight:bold; color:var(--primary)">4</span>h</label>
+        <input type="range" id="timeGap" min="1" max="48" value="4" step="1" style="vertical-align:middle">
+
+        <br><br>
+        <button onclick="processImages()" class="btn" style="width:100%; max-width:300px;">🚀 Analyser et Trier</button>
+    </div>
+
+    <div id="results-area"></div>
+
+    <div id="download-section">
+        <button onclick="downloadZip()" class="btn shadow-btn" style="background-color: #059669; font-size: 1.2rem; padding: 15px 40px;">
+            📦 Télécharger le ZIP nommé
+        </button>
+    </div>
+</div>
+
+<script>
+    // Variable globale pour stocker les groupes et leurs noms
+    let globalGroupsData = [];
+
+    document.getElementById('timeGap').addEventListener('input', (e) => {
+        document.getElementById('gapValue').textContent = e.target.value;
+    });
+
+    async function processImages() {
+        const input = document.getElementById('fileInput');
+        const resultsArea = document.getElementById('results-area');
+        const gapHours = parseInt(document.getElementById('timeGap').value);
+        
+        if (input.files.length === 0) return alert("Sélectionnez des photos !");
+
+        resultsArea.innerHTML = '<p style="text-align:center; color:#666">⏳ Analyse des métadonnées en cours...</p>';
+        
+        // 1. Lire les EXIF
+        let photoData = [];
+        for (let file of input.files) {
+            const date = await getExifDate(file);
+            photoData.push({ file, date, timestamp: date.getTime() });
+        }
+
+        // 2. Trier
+        photoData.sort((a, b) => a.timestamp - b.timestamp);
+
+        // 3. Grouper
+        const groups = [];
+        if (photoData.length > 0) {
+            let currentGroup = [photoData[0]];
+            for (let i = 1; i < photoData.length; i++) {
+                const diffHours = (photoData[i].timestamp - photoData[i-1].timestamp) / (1000 * 3600);
+                if (diffHours > gapHours) {
+                    groups.push(currentGroup);
+                    currentGroup = [];
+                }
+                currentGroup.push(photoData[i]);
+            }
+            groups.push(currentGroup);
+        }
+
+        // 4. Stocker dans la variable globale avec des noms par défaut
+        globalGroupsData = groups.map((group, index) => {
+            const dateStr = group[0].date.toLocaleDateString('fr-CA'); // Format YYYY-MM-DD
+            return {
+                name: `Evenement_${index + 1}_${dateStr}`, // Nom par défaut
+                id: index,
+                photos: group
+            };
+        });
+
+        renderInterface();
+    }
+
+    // Fonction d'affichage V2
+    function renderInterface() {
+        const container = document.getElementById('results-area');
+        container.innerHTML = "";
+
+        globalGroupsData.forEach((groupData, index) => {
+            const photos = groupData.photos;
+            const startPhoto = photos[0];
+            const endPhoto = photos[photos.length - 1];
+            
+            // URLs pour l'aperçu
+            const startUrl = URL.createObjectURL(startPhoto.file);
+            const endUrl = URL.createObjectURL(endPhoto.file);
+            
+            // Création de la carte HTML
+            const card = document.createElement('div');
+            card.className = 'folder-card';
+            
+            card.innerHTML = `
+                <div class="folder-header">
+                    <div>
+                        <label style="font-size:0.8rem; color:#666; display:block; margin-bottom:5px;">Nom du dossier :</label>
+                        <input type="text" class="folder-name-input" value="${groupData.name}" data-id="${index}" onchange="updateName(this)">
+                    </div>
+                    <div class="folder-info">
+                        <strong>${photos.length} photos</strong><br>
+                        Du ${startPhoto.date.toLocaleDateString()} ${startPhoto.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}<br>
+                        Au ${endPhoto.date.toLocaleDateString()} ${endPhoto.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </div>
+                </div>
+
+                <div class="preview-strip">
+                    <div class="key-photo">
+                        <div class="key-label">Début</div>
+                        <img src="${startUrl}">
+                    </div>
+                    
+                    <div style="flex-grow:1; display:flex; flex-direction:column; justify-content:center; color:#94a3b8; font-size:0.9rem;">
+                         <p>... contient ${photos.length - 2 > 0 ? photos.length - 2 : 0} autres photos ...</p>
+                         <button class="toggle-btn" onclick="toggleDetails(${index})">Voir tout le contenu ▼</button>
+                    </div>
+
+                    <div class="key-photo">
+                        <div class="key-label">Fin</div>
+                        <img src="${endUrl}">
+                    </div>
+                </div>
+
+                <div class="folder-content" id="content-${index}">
+                    <div class="grid-gallery" id="gallery-${index}"></div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        document.getElementById('download-section').style.display = 'block';
+    }
+
+    // Mettre à jour le nom dans les données quand l'utilisateur tape quelque chose
+    function updateName(inputElement) {
+        const id = inputElement.getAttribute('data-id');
+        // Nettoyage du nom de dossier (pas de caractères spéciaux interdits)
+        let cleanName = inputElement.value.replace(/[^a-zA-Z0-9_\-\s]/g, "");
+        globalGroupsData[id].name = cleanName;
+    }
+
+    // Déplier / Replier
+    function toggleDetails(index) {
+        const contentDiv = document.getElementById(`content-${index}`);
+        const galleryDiv = document.getElementById(`gallery-${index}`);
+        
+        if (contentDiv.style.display === "block") {
+            contentDiv.style.display = "none";
+        } else {
+            contentDiv.style.display = "block";
+            // On charge les images seulement si on ouvre (pour la performance)
+            if (galleryDiv.innerHTML === "") {
+                globalGroupsData[index].photos.forEach(p => {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(p.file);
+                    galleryDiv.appendChild(img);
+                });
+            }
+        }
+    }
+
+    // Récupération Date (identique à avant)
+    function getExifDate(file) {
+        return new Promise((resolve) => {
+            EXIF.getData(file, function() {
+                const exifDate = EXIF.getTag(this, "DateTimeOriginal");
+                if (exifDate) {
+                    const dateStr = exifDate.split(" ")[0].replace(/:/g, "-") + " " + exifDate.split(" ")[1];
+                    resolve(new Date(dateStr));
+                } else {
+                    resolve(new Date(file.lastModified));
+                }
+            });
+        });
+    }
+
+    // Téléchargement ZIP avec les NOMS PERSONNALISÉS
+    async function downloadZip() {
+        const zip = new JSZip();
+        const btn = document.querySelector('#download-section button');
+        const oldText = btn.innerText;
+        btn.innerText = "⏳ Création du ZIP...";
+
+        globalGroupsData.forEach(group => {
+            const folder = zip.folder(group.name); // Utilise le nom modifié par l'utilisateur
+            group.photos.forEach(item => {
+                folder.file(item.file.name, item.file);
+            });
+        });
+
+        const content = await zip.generateAsync({type:"blob"});
+        saveAs(content, "Photos_Triees.zip");
+        btn.innerText = oldText;
+    }
+</script>
+
+</body>
+</html>
