@@ -648,4 +648,9 @@ h2 {
         max-width: 100%;
         height: auto !important;
     }
+
+    /* Cacher le bouton de triche sur mobile */
+    #cheatBtn {
+        display: none;
+    }
 }

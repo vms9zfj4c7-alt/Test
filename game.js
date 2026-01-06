@@ -103,6 +103,17 @@ function passTime() {
 
 // Gestion des cooldowns
 function updateCooldowns() {
+    // CHEAT: Reset immédiat si l'option est active
+    if (player.noCooldowns) {
+        player.concertCooldown = 0;
+        player.albumCooldown = 0;
+        player.restCooldown = 0;
+        player.partyCooldown = 0;
+        for (let skill in player.trainingCooldowns) {
+            player.trainingCooldowns[skill] = 0;
+        }
+    }
+
     let busy = false;
 
     // Training

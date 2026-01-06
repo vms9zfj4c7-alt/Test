@@ -120,6 +120,7 @@ function formatNumber(num) {
 }
 
 // Menu de Triche (Caché)
+// Menu de Triche (Caché)
 function openCheatMenu() {
     const modal = document.createElement('div');
     modal.className = 'custom-modal-overlay';
@@ -144,6 +145,10 @@ function openCheatMenu() {
                     <label>Popularité</label>
                     <input type="number" id="cheat-popularity" value="${Math.floor(player.popularity)}">
                 </div>
+                <div style="grid-column: span 2; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;">
+                    <label for="cheat-cooldowns" style="margin-bottom: 0;">⚡ Pas de temps d'attente</label>
+                    <input type="checkbox" id="cheat-cooldowns" ${player.noCooldowns ? 'checked' : ''} style="width: auto; margin-bottom: 0;">
+                </div>
             </div>
             <div class="modal-buttons">
                 <button onclick="this.closest('.custom-modal-overlay').remove()">Annuler</button>
@@ -161,11 +166,21 @@ function applyCheats() {
     const fans = parseInt(document.getElementById('cheat-fans').value);
     const health = parseInt(document.getElementById('cheat-health').value);
     const popularity = parseInt(document.getElementById('cheat-popularity').value);
+    const noCooldowns = document.getElementById('cheat-cooldowns').checked;
 
     if (!isNaN(money)) player.money = money;
     if (!isNaN(fans)) player.fans = fans;
     if (!isNaN(health)) player.health = Math.min(100, Math.max(0, health));
     if (!isNaN(popularity)) player.popularity = popularity;
+
+    player.noCooldowns = noCooldowns;
+    if (noCooldowns) {
+        player.concertCooldown = 0;
+        player.albumCooldown = 0;
+        player.restCooldown = 0;
+        player.partyCooldown = 0;
+        for (let key in player.trainingCooldowns) player.trainingCooldowns[key] = 0;
+    }
 
     updateDisplay();
     showNotification('✨ Réalité altérée avec succès !', 'success');
