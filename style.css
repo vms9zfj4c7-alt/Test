@@ -556,16 +556,19 @@ h2 {
         flex-direction: column;
         flex: 1;
         min-height: 0;
+        grid-template-columns: none;
+        /* Force reset */
     }
 
     /* Le contenu prend tout l'espace disponible */
     .content-area {
         order: 1;
         flex: 1;
-        width: 100%;
+        width: 100vw;
+        /* Force full viewport width just in case */
+        max-width: 100%;
         padding: 15px;
         padding-bottom: 80px;
-        /* Espace pour éviter que le contenu soit caché par la nav si fixed (ici non fixed mais bon) */
     }
 
     /* Header info plus compact */
