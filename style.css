@@ -533,3 +533,113 @@ h2 {
 .custom-modal-overlay.active .custom-modal {
     transform: scale(1);
 }
+
+/* MOBILE RESPONSIVE ADAPTATION */
+@media (max-width: 768px) {
+    .container {
+        width: 100%;
+        height: 100vh;
+        max-width: none;
+        border: none;
+        border-radius: 0;
+    }
+
+    h1 {
+        font-size: 1.8em;
+        padding: 15px 0;
+    }
+
+    /* Adapter le layout principal en colonne */
+    .main-layout {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* Le contenu prend tout l'espace disponible */
+    .content-area {
+        order: 1;
+        flex: 1;
+        width: 100%;
+        padding: 15px;
+        padding-bottom: 80px;
+        /* Espace pour éviter que le contenu soit caché par la nav si fixed (ici non fixed mais bon) */
+    }
+
+    /* Header info plus compact */
+    .header-info {
+        padding: 10px;
+        gap: 8px;
+        justify-content: space-between;
+    }
+
+    .header-info>div {
+        font-size: 0.85em;
+    }
+
+    .player-name {
+        font-size: 1.2em;
+        width: 100%;
+        text-align: center;
+    }
+
+    /* Transformer la sidebar en barre de navigation horizontale en bas */
+    .sidebar {
+        order: 2;
+        width: 100%;
+        height: auto;
+        max-height: 80px;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        border-right: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 10px;
+        gap: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        -webkit-overflow-scrolling: touch;
+        /* Scroll fluide sur iOS */
+    }
+
+    .sidebar button {
+        flex: 0 0 auto;
+        padding: 8px 15px;
+        font-size: 0.9em;
+        /* Assurer que les boutons sont assez hauts pour le tactile */
+        min-height: 40px;
+    }
+
+    /* Grilles sur une seule colonne ou deux petites */
+    .action-grid,
+    .shop-grid,
+    .training-grid {
+        grid-template-columns: 1fr;
+        /* Une seule colonne pour lisibilité */
+    }
+
+    /* Ajuster les modales */
+    .custom-modal {
+        width: 95%;
+        padding: 20px;
+    }
+
+    /* Ajuster les notifications */
+    #notification-container {
+        width: 90%;
+        right: 5%;
+        top: 10px;
+    }
+
+    .toast-notification {
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
+
+    /* Ajuster les graphiques */
+    canvas {
+        max-width: 100%;
+        height: auto !important;
+    }
+}
