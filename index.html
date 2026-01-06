@@ -1,435 +1,93 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trieur Photo Mobile V4</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --bg: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px 15px; /* Marges réduites pour mobile */
-            padding-bottom: 100px; /* Espace pour le bouton flottant */
-        }
-
-        .container { max-width: 800px; margin: 0 auto; }
-
-        /* HEADER */
-        header { text-align: center; margin-bottom: 30px; }
-        h1 { font-size: 1.8rem; margin: 0 0 5px 0; color: #111827; }
-        p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
-
-        /* CONTROLS CARD */
-        .controls-card {
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            border: 1px solid var(--border);
-            margin-bottom: 30px;
-        }
-
-        .file-upload-label {
-            display: block;
-            width: 100%;
-            text-align: center;
-            background-color: white;
-            color: var(--text-main);
-            border: 2px dashed #cbd5e1;
-            padding: 15px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        
-        input[type="range"] { width: 100%; height: 6px; background: #e5e7eb; border-radius: 5px; outline: none; -webkit-appearance: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: var(--primary); border-radius: 50%; cursor: pointer; }
-
-        .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            width: 100%;
-            cursor: pointer;
-            display: flex; justify-content: center; align-items: center; gap: 8px;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
-        }
-        .btn:active { transform: scale(0.98); }
-
-        /* EVENT CARD */
-        .folder-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-            margin-bottom: 20px;
-            border: 1px solid var(--border);
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 15px;
-            background: #f9fafb;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .input-group label {
-            display: block; font-size: 0.7rem; text-transform: uppercase; 
-            color: var(--text-muted); font-weight: 700; margin-bottom: 5px;
-        }
-
-        .folder-name-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            color: var(--text-main);
-            background: white;
-        }
-
-        .meta-badges {
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .badge {
-            background: #eef2ff; color: var(--primary);
-            padding: 4px 8px; border-radius: 6px;
-            font-size: 0.75rem; font-weight: 600;
-        }
-
-        .card-body { padding: 15px; }
-
-        /* Timeline Adaptation Mobile */
-        .visual-timeline {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .photo-preview { text-align: center; flex: 1; }
-        
-        .photo-frame {
-            width: 100%;
-            aspect-ratio: 1/1; /* Carré parfait */
-            max-width: 100px;  /* Max sur desktop */
-            margin: 0 auto 5px auto;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 2px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        
-        .photo-frame img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .timeline-label { font-size: 0.7rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase;}
-
-        .timeline-connector {
-            flex: 0.5;
-            display: flex;
-            justify-content: center;
-        }
-
-        .toggle-btn {
-            background: #f3f4f6;
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-        }
-
-        /* Grille Images */
-        .hidden-gallery {
-            display: none;
-            grid-template-columns: repeat(4, 1fr); /* 4 par ligne */
-            gap: 5px;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px dashed var(--border);
-        }
-        .hidden-gallery img {
-            width: 100%;
-            aspect-ratio: 1/1;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-
-        /* Floating Button */
-        #download-section {
-            position: fixed;
-            bottom: 25px; left: 20px; right: 20px;
-            z-index: 999;
-            display: none;
-        }
-        .btn-download {
-            background: #10b981;
-            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
-            font-size: 1.1rem;
-            padding: 16px;
-            border-radius: 50px;
-        }
-
-        /* --- RESPONSIVE MEDIA QUERIES --- */
-        @media (max-width: 600px) {
-            h1 { font-size: 1.5rem; }
-            
-            /* Sur mobile, on cache le trait connecteur et on simplifie */
-            .visual-timeline {
-                display: grid;
-                grid-template-columns: 1fr 1fr; /* 2 colonnes strictes */
-                gap: 15px;
-            }
-            
-            .timeline-connector {
-                grid-column: 1 / -1; /* Le bouton prend toute la largeur en dessous */
-                margin-top: 5px;
-            }
-            
-            .toggle-btn { width: 100%; }
-            
-            .photo-frame { max-width: none; /* Prend toute la place de sa colonne */ }
-            
-            .hidden-gallery {
-                grid-template-columns: repeat(3, 1fr); /* 3 images par ligne sur mobile */
-            }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Star Career</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Rye&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
+    <div class="container">
+        <h1>🎸 ROCK STAR CAREER 🎸</h1>
 
-<div class="container">
-    <header>
-        <h1>Trieur Photo V4</h1>
-        <p class="subtitle">Version Mobile Optimisée</p>
-    </header>
-
-    <div class="controls-card">
-        <label for="fileInput" class="file-upload-label">
-            📂 Appuyer pour choisir photos
-        </label>
-        <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
-        
-        <div style="width:100%">
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.9rem;">
-                <span>Séparer les événements</span>
-                <strong><span id="gapValue" style="color:var(--primary)">4</span>h de pause</strong>
+        <div class="creation-screen active" id="creationScreen">
+            <div class="form-group">
+                <label for="playerName">Nom de scène :</label>
+                <input type="text" id="playerName" placeholder="Ex: Axl Fury">
             </div>
-            <input type="range" id="timeGap" min="1" max="48" value="4" step="1">
+            <div class="form-group">
+                <label for="instrument">Instrument :</label>
+                <select id="instrument">
+                    <option value="guitare">Guitare Électrique</option>
+                    <option value="basse">Basse</option>
+                    <option value="batterie">Batterie</option>
+                    <option value="chant">Chant</option>
+                    <option value="clavier">Clavier</option>
+                </select>
+            </div>
+            <button onclick="startGame()">Commencer la Carrière</button>
         </div>
-        
-        <button onclick="processImages()" class="btn">
-            🔍 Analyser et Trier
-        </button>
+
+        <div class="death-screen" id="deathScreen">
+            <div
+                style="font-size: 3em; color: #ff0000; text-shadow: 0 0 20px #ff0000; margin-bottom: 30px; text-align: center;">
+                ☠️ R.I.P ☠️</div>
+            <div id="deathMessage" style="font-size: 1.5em; margin-bottom: 30px; text-align: center;"></div>
+            <div id="deathStats" style="margin-bottom: 30px; text-align: center;"></div>
+            <button onclick="location.reload()" style="display: block; margin: 0 auto;">Nouvelle Carrière</button>
+        </div>
+
+        <div class="game-screen" id="gameScreen">
+            <div class="header-info">
+                <div class="player-name" id="displayName"></div>
+                <div class="stat-label" id="displayInstrument"></div>
+                <div class="stat-label" id="displayGroup">Solo</div>
+                <div class="health-bar">
+                    <div class="health-fill health-good" id="healthBar">100%</div>
+                </div>
+                <div style="color: #ff6b6b; margin-top: 10px;">
+                    🕐 Âge: <span id="displayAge">18</span> ans |
+                    💊 Addiction: <span id="displayAddiction">0</span>%
+                </div>
+            </div>
+
+            <div class="main-layout">
+                <div class="sidebar">
+                    <button onclick="showView('concert')">🎤 Concerts</button>
+                    <button onclick="showView('training')">📚 Entraînement</button>
+                    <button onclick="showView('albums')">💿 Albums</button>
+                    <button onclick="showView('shop')">🛒 Boutique</button>
+                    <button onclick="showView('groups')">🎸 Groupes</button>
+                    <button onclick="showView('stats')">📊 Statistiques</button>
+                    <button onclick="showView('lifestyle')">💊 Style de vie</button>
+                    <button onclick="showView('history')">📜 Historique</button>
+                    <button onclick="saveGame()"
+                        style="background: linear-gradient(135deg, #0a5c8b 0%, #00aaff 100%);">💾 Sauvegarder</button>
+                </div>
+                <div class="content-area" id="contentArea"></div>
+            </div>
+        </div>
     </div>
 
-    <div id="results-area"></div>
-</div>
-
-<div id="download-section">
-    <button onclick="downloadZip()" class="btn btn-download">
-        📦 Télécharger ZIP
-    </button>
-</div>
-
-<script>
-    let globalGroupsData = [];
-
-    document.getElementById('timeGap').addEventListener('input', (e) => {
-        document.getElementById('gapValue').textContent = e.target.value;
-    });
-
-    async function processImages() {
-        const input = document.getElementById('fileInput');
-        const resultsArea = document.getElementById('results-area');
-        const gapHours = parseInt(document.getElementById('timeGap').value);
-        
-        if (input.files.length === 0) return alert("Sélectionnez des photos !");
-
-        resultsArea.innerHTML = '<div style="text-align:center; padding:40px; color:#666">⏳ Analyse des photos...<br><small>Cela peut prendre quelques secondes</small></div>';
-        
-        let photoData = [];
-        for (let file of input.files) {
-            const date = await getExifDate(file);
-            photoData.push({ file, date, timestamp: date.getTime() });
-        }
-
-        photoData.sort((a, b) => a.timestamp - b.timestamp);
-
-        const groups = [];
-        if (photoData.length > 0) {
-            let currentGroup = [photoData[0]];
-            for (let i = 1; i < photoData.length; i++) {
-                const diffHours = (photoData[i].timestamp - photoData[i-1].timestamp) / (1000 * 3600);
-                if (diffHours > gapHours) {
-                    groups.push(currentGroup);
-                    currentGroup = [];
-                }
-                currentGroup.push(photoData[i]);
-            }
-            groups.push(currentGroup);
-        }
-
-        globalGroupsData = groups.map((group, index) => {
-            const d = group[0].date;
-            const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            return {
-                name: `Evenement_${index + 1}_${dateStr}`,
-                id: index,
-                photos: group
-            };
-        });
-
-        renderInterface();
-    }
-
-    function renderInterface() {
-        const container = document.getElementById('results-area');
-        container.innerHTML = "";
-
-        globalGroupsData.forEach((groupData, index) => {
-            const photos = groupData.photos;
-            const start = photos[0];
-            const end = photos[photos.length - 1];
-            
-            const startUrl = URL.createObjectURL(start.file);
-            const endUrl = URL.createObjectURL(end.file);
-            const dateNice = start.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-            
-            const card = document.createElement('div');
-            card.className = 'folder-card';
-            
-            card.innerHTML = `
-                <div class="card-header">
-                    <div class="input-group">
-                        <label>Nom du dossier</label>
-                        <input type="text" class="folder-name-input" value="${groupData.name}" data-id="${index}" onchange="updateName(this)">
-                    </div>
-                    <div class="meta-badges">
-                        <span class="badge">📅 ${dateNice}</span>
-                        <span class="badge">📷 ${photos.length}</span>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    <div class="visual-timeline">
-                        <div class="photo-preview">
-                            <div class="photo-frame"><img src="${startUrl}"></div>
-                            <div class="timeline-label">Début</div>
-                        </div>
-
-                        <div class="photo-preview">
-                            <div class="photo-frame"><img src="${endUrl}"></div>
-                            <div class="timeline-label">Fin</div>
-                        </div>
-
-                        <div class="timeline-connector">
-                            <button class="toggle-btn" onclick="toggleDetails(${index})">
-                                Afficher les ${photos.length} photos ▼
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="hidden-gallery" id="gallery-${index}"></div>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-        
-        document.getElementById('download-section').style.display = 'block';
-    }
-
-    function updateName(el) {
-        const id = el.getAttribute('data-id');
-        let clean = el.value.replace(/[^a-zA-Z0-9_\-\s]/g, "").trim();
-        if(!clean) clean = `Dossier_${id}`;
-        globalGroupsData[id].name = clean;
-    }
-
-    function toggleDetails(index) {
-        const gallery = document.getElementById(`gallery-${index}`);
-        const btn = gallery.parentNode.querySelector('.toggle-btn');
-        
-        if (gallery.style.display === "grid") {
-            gallery.style.display = "none";
-            btn.innerHTML = `Afficher les ${globalGroupsData[index].photos.length} photos ▼`;
-        } else {
-            gallery.style.display = "grid";
-            btn.innerHTML = `Masquer ▲`;
-            if (gallery.innerHTML === "") {
-                globalGroupsData[index].photos.forEach(p => {
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(p.file);
-                    gallery.appendChild(img);
-                });
-            }
-        }
-    }
-
-    function getExifDate(file) {
-        return new Promise((resolve) => {
-            EXIF.getData(file, function() {
-                const exifDate = EXIF.getTag(this, "DateTimeOriginal");
-                if (exifDate) {
-                    const [d, t] = exifDate.split(" ");
-                    resolve(new Date(d.replace(/:/g, "-") + " " + t));
-                } else {
-                    resolve(new Date(file.lastModified));
-                }
-            });
-        });
-    }
-
-    async function downloadZip() {
-        const zip = new JSZip();
-        const btn = document.querySelector('.btn-download');
-        const oldText = btn.innerText;
-        btn.innerText = "⏳ Création du ZIP...";
-        btn.disabled = true;
-
-        globalGroupsData.forEach(group => {
-            const folder = zip.folder(group.name);
-            group.photos.forEach(item => {
-                folder.file(item.file.name, item.file);
-            });
-        });
-
-        const content = await zip.generateAsync({type:"blob"});
-        saveAs(content, "Photos_Triees_Mobile.zip");
-        btn.innerText = oldText;
-        btn.disabled = false;
-    }
-</script>
-
+    <button id="cheatBtn" onclick="openCheatMenu()">π</button>
+    <script src="config.js"></script>
+    <script src="ui.js"></script>
+    <script src="player.js"></script>
+    <script src="game.js"></script>
+    <script src="concerts.js"></script>
+    <script src="training.js"></script>
+    <script src="albums.js"></script>
+    <script src="shop.js"></script>
+    <script src="groups.js"></script>
+    <script src="lifestyle.js"></script>
+    <script src="views.js"></script>
 </body>
+
 </html>

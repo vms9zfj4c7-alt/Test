@@ -1,0 +1,128 @@
+// État du joueur
+let player = {
+    name: '',
+    instrument: '',
+    age: 18,
+    health: 100,
+    addiction: 0,
+    money: 300,
+    fans: 0,
+    popularity: 0,
+    concertsPlayed: 0,
+    group: null,
+    skills: { technique: 10, scene: 10, composition: 10, charisme: 10, marketing: 10, endurance: 10 },
+    equipment: { instrument: 0, amplifier: 0, lights: 0, pyrotechnics: 0, soundSystem: 0, transport: 0, studio: 0 },
+    trainingCooldowns: { technique: 0, scene: 0, composition: 0, charisme: 0, marketing: 0, endurance: 0 },
+    daysWithoutDrugs: 0,
+    concertCooldown: 0,
+    albums: [],
+    albumCooldown: 0,
+    restCooldown: 0,
+    partyCooldown: 0,
+    isDead: false,
+    infiniteMoney: false,
+    infiniteStats: false
+};
+
+// Variables globales
+let gameTime = 0;
+let currentView = 'concert';
+let careerHistory = JSON.parse(localStorage.getItem('careerHistory') || '[]');
+
+// Fonctions de gestion du joueur
+function updateDisplay() {
+    document.getElementById('displayName').textContent = player.name;
+    document.getElementById('displayInstrument').textContent = `🎸 ${player.instrument.charAt(0).toUpperCase() + player.instrument.slice(1)}`;
+    document.getElementById('displayGroup').textContent = player.group ? `🎸 Groupe: ${player.group.name}` : '🎤 Solo';
+    document.getElementById('displayAge').textContent = Math.floor(player.age);
+    document.getElementById('displayAddiction').textContent = Math.floor(player.addiction);
+
+    const healthBar = document.getElementById('healthBar');
+    const healthPercent = Math.max(0, Math.min(100, player.health));
+    healthBar.style.width = healthPercent + '%';
+    healthBar.textContent = Math.floor(player.health) + '%';
+    healthBar.className = 'health-fill ' + (healthPercent > 60 ? 'health-good' : healthPercent > 30 ? 'health-medium' : 'health-bad');
+}
+
+function getTotalEquipmentBonus() {
+    let total = 0;
+    for (let eq in player.equipment) {
+        const level = player.equipment[eq];
+        if (level > 0 && shopItems[eq]) total += shopItems[eq][level - 1].bonus;
+    }
+    return total;
+}
+
+function hasAnyEquipment() {
+    for (let eq in player.equipment) {
+        if (player.equipment[eq] > 0) return true;
+    }
+    return false;
+}
+
+function calculateMaintenance() {
+    let cost = 0;
+    for (let eq in player.equipment) {
+        if (player.equipment[eq] > 0) cost += player.equipment[eq] * 50;
+    }
+    if (player.group) cost += 200;
+    return cost;
+}
+
+// Sauvegarde et chargement
+function saveGame() {
+    if (!player.isDead) {
+        localStorage.setItem('currentGame', JSON.stringify(player));
+    }
+}
+
+function loadGame() {
+    const saved = localStorage.getItem('currentGame');
+    if (saved) {
+        const savedPlayer = JSON.parse(saved);
+
+        // Vérifier si le joueur sauvegardé est mort
+        if (savedPlayer.isDead || savedPlayer.health <= 0 || (savedPlayer.money < 0 && !savedPlayer.infiniteStats)) {
+            localStorage.removeItem('currentGame');
+            return false;
+        }
+
+        showConfirmModal('Une sauvegarde existe. Veux-tu reprendre ta carrière de Rockstar ?', () => {
+            // Callback OUI
+            player = savedPlayer;
+            player.isDead = false;
+
+            // Migration des données : ajouter les propriétés manquantes
+            if (player.infiniteStats === undefined) player.infiniteStats = false;
+            if (player.infiniteMoney === undefined) player.infiniteMoney = false;
+            if (player.daysWithoutDrugs === undefined) player.daysWithoutDrugs = 0;
+            if (player.albums === undefined) player.albums = [];
+            if (player.albumCooldown === undefined) player.albumCooldown = 0;
+            if (player.restCooldown === undefined) player.restCooldown = 0;
+            if (player.partyCooldown === undefined) player.partyCooldown = 0;
+            if (player.equipment.studio === undefined) player.equipment.studio = 0;
+
+            // Migration des albums
+            if (player.albums && player.albums.length > 0) {
+                player.albums = player.albums.map(album => {
+                    if (album.albumTypeKey === undefined) album.albumTypeKey = 'album';
+                    if (album.revenuePerMinute === undefined) album.revenuePerMinute = 0;
+                    if (album.fansPerMinute === undefined) album.fansPerMinute = 0;
+                    return album;
+                });
+            }
+
+            // Lancer la boucle unifiée
+            startGameLoop();
+            showNotification('Carrière chargée avec succès !', 'success');
+
+        }, () => {
+            // Callback NON (rien à faire, on reste sur l'écran de création)
+            localStorage.removeItem('currentGame');
+            showNotification('Sauvegarde ignorée. Prêt pour une nouvelle carrière ?', 'info');
+        });
+
+        return true;
+    }
+    return false;
+}

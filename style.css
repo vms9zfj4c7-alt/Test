@@ -1,0 +1,535 @@
+/* RESET & BASE */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(-45deg, #0d0d1a, #2a0a1a, #1a0a2d, #000000);
+    background-size: 400% 400%;
+    animation: gradientBG 20s ease infinite;
+    color: #e0e0e0;
+    height: 100vh;
+    overflow: hidden;
+    /* Empêche le scroll du body */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@keyframes gradientBG {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* LAYOUT PRINCIPAL */
+/* LAYOUT PRINCIPAL */
+.container {
+    position: relative;
+    /* Important pour absolute children */
+    width: 95%;
+    height: 95vh;
+    max-width: 1400px;
+    background: rgba(20, 20, 30, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05);
+    display: grid;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+}
+
+/* HEADER */
+h1 {
+    font-family: 'Rye', cursive;
+    text-align: center;
+    color: #ff0055;
+    text-shadow: 0 0 15px #ff0055, 0 0 30px #ff0055;
+    font-size: 2.5em;
+    padding: 20px 0;
+    letter-spacing: 2px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 0;
+}
+
+/* SCREENS */
+.creation-screen,
+.death-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+}
+
+.creation-screen.active,
+.death-screen.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.game-screen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+    overflow: hidden;
+    min-height: 0;
+    /* Important */
+}
+
+.game-screen.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* GRILLE PRINCIPALE DU JEU */
+.main-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* SIDEBAR & HEADER INFO */
+.header-info {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 30px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+
+.header-info>div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar {
+    background: rgba(0, 0, 0, 0.3);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* Retour à 10px pour éviter l'effet entassé visuel si trop espacé, mais avec flex-shrink 0 */
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ff0055 rgba(0, 0, 0, 0.3);
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #ff0055;
+    border-radius: 4px;
+}
+
+/* CONTENT AREA (SCROLLABLE) */
+.content-area {
+    padding: 30px;
+    overflow-y: auto;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: #ff0055 rgba(0, 0, 0, 0.3);
+    height: 100%;
+}
+
+.content-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content-area::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.content-area::-webkit-scrollbar-thumb {
+    background: #ff0055;
+    border-radius: 4px;
+}
+
+/* TRANSITIONS DE VUES */
+.view-content {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-out {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.2s ease-in;
+}
+
+/* COMPOSANTS UI */
+button {
+    background: linear-gradient(135deg, #a00030 0%, #ff0055 100%);
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar button {
+    text-align: center;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+    color: #bbb;
+    flex-shrink: 0;
+    /* Important pour ne pas écraser les boutons */
+}
+
+.sidebar button:hover {
+    background: rgba(255, 0, 85, 0.1);
+    border-color: #ff0055;
+    color: #fff;
+    /* Transformation simple pour effet de survol sans décalage gauche */
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(255, 0, 85, 0.2);
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 0, 85, 0.5);
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+button:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-radius: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #ff0055;
+    box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
+}
+
+/* CARTES ET GRILLES */
+.action-grid,
+.shop-grid,
+.training-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.card-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    transition: transform 0.3s, background 0.3s;
+}
+
+.card-panel:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-5px);
+    border-color: rgba(255, 0, 85, 0.5);
+}
+
+/* STATS */
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.stats-compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+}
+
+.stat-label {
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+.stat-value {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* HEALTH BAR */
+.health-bar {
+    background: rgba(0, 0, 0, 0.5);
+    height: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 5px;
+    min-width: 150px;
+    flex-grow: 1;
+    position: relative;
+}
+
+.health-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+    text-shadow: 0 0 2px #000;
+    white-space: nowrap;
+}
+
+.health-good {
+    background: linear-gradient(90deg, #00ff88, #00cc6a);
+}
+
+.health-medium {
+    background: linear-gradient(90deg, #ffcc00, #ffaa00);
+}
+
+.health-bad {
+    background: linear-gradient(90deg, #ff4444, #cc0000);
+}
+
+/* PLAYER NAME STYLE */
+.player-name {
+    font-family: 'Rye', cursive;
+    font-size: 1.5em;
+    color: #ff0055;
+    text-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+}
+
+/* TITRES */
+h2 {
+    font-family: 'Montserrat', sans-serif;
+    color: #fff;
+    border-bottom: 2px solid #ff0055;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+/* CHEAT BUTTON */
+#cheatBtn {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 50px;
+    /* Larger hit area */
+    height: 50px;
+    background: transparent;
+    border: none;
+    color: transparent;
+    font-size: 0;
+    /* Hide text */
+    cursor: default;
+    z-index: 9999;
+    opacity: 0;
+    /* Totally invisible */
+}
+
+#cheatBtn:hover {
+    opacity: 1;
+    /* Visible on hover only */
+    color: rgba(255, 255, 255, 0.2);
+    /* Very subtle on hover */
+    text-shadow: none;
+}
+
+/* NOTIFICATIONS ET MODALES (UI.JS) */
+#notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+}
+
+.toast-notification {
+    background: rgba(20, 20, 30, 0.95);
+    border-left: 4px solid;
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    font-family: 'Montserrat', sans-serif;
+    margin-bottom: 15px;
+    backdrop-filter: blur(10px);
+    transform: translateX(120%);
+    transition: transform 0.3s ease-out;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.toast-notification.show {
+    transform: translateX(0);
+}
+
+.toast-notification .close-notif {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 0 5px;
+    margin-left: 10px;
+    line-height: 1;
+    min-width: auto;
+    /* Override button min-width */
+    box-shadow: none;
+}
+
+.toast-notification .close-notif:hover {
+    color: #fff;
+    background: transparent;
+    transform: scale(1.1);
+}
+
+.toast-notification.success {
+    border-color: #00ff88;
+    box-shadow: 0 5px 20px rgba(0, 255, 136, 0.1);
+}
+
+.toast-notification.error {
+    border-color: #ff4444;
+    box-shadow: 0 5px 20px rgba(255, 68, 68, 0.1);
+}
+
+.toast-notification.info {
+    border-color: #00ccff;
+    box-shadow: 0 5px 20px rgba(0, 204, 255, 0.1);
+}
+
+.floating-text {
+    position: fixed;
+    font-weight: bold;
+    font-size: 1.5em;
+    pointer-events: none;
+    animation: floatUp 1s ease-out forwards;
+    z-index: 9999;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* MODALE */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 20000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+}
+
+.custom-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.custom-modal {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 90%;
+    transform: scale(0.7);
+    transition: transform 0.3s;
+    text-align: center;
+}
+
+.custom-modal-overlay.active .custom-modal {
+    transform: scale(1);
+}
